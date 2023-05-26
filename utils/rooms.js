@@ -1,6 +1,6 @@
 let rooms = []
 
-export const createRoom = (userName,roomId) => {
+export const createRoom = (userId, roomId) => {
   const isRoomReady = rooms.find(room => room.roomId === roomId)
 
   if (!isRoomReady){
@@ -8,6 +8,8 @@ export const createRoom = (userName,roomId) => {
       isPlay: false,
       time: 0,
       roomId,
+      videoLink: "hMPMUDydTtQ",
+      admin:userId,
       users: [],
     })
     return {
@@ -16,6 +18,33 @@ export const createRoom = (userName,roomId) => {
   } else {
     return {
       create:false
+    }
+  }
+}
+
+export const checkAdmin = (userId,roomId) => {
+  const isRoomReady = rooms.find(room => room.roomId === roomId)
+  
+  if (isRoomReady){
+    if (isRoomReady.admin === userId) {
+      return true
+    } else {
+      return false
+    }
+  }
+}
+
+export const deleteRoom = (roomId) => {
+  const isRoomReady = rooms.find(room => room.roomId === roomId)
+
+  if (isRoomReady) {
+    rooms = rooms.filter(room => room.roomId !== roomId)
+    return {
+      close:true
+    }
+  } else {
+    return {
+      close:false
     }
   }
 }
@@ -29,15 +58,15 @@ export const findRoom = (roomId) => {
   }
 }
 
-export const joinRoom = (userName, userId, roomId, videoLink) => {
+export const joinRoom = (userName, userId, roomId, userAvatar) => {
   rooms = rooms.map(room => {
     if (room.roomId === roomId){
       return {
         ...room,
-        videoLink,
         users: [...room.users, {
           userName,
-          userId
+          userId,
+          userAvatar
         }]
       }
     } else {
@@ -51,7 +80,7 @@ export const joinRoom = (userName, userId, roomId, videoLink) => {
     userId,
     userName,
     room:roomId,
-    videoLink,
+    userAvatar
   }
 }
 

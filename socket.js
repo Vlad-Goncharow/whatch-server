@@ -14,7 +14,8 @@ import {
   setVideoState,
   changeRoomVideo,
   userRoomLeave,
-  testError
+  checkAdmin,
+  deleteRoom
 } from './utils/rooms.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -40,7 +41,7 @@ const io = new Server({
 
 io.on('connection', (socket) => {
   socket.on('create_room', (data,callback) => {
-    const event = createRoom(data.userName, data.roomId)
+    const event = createRoom(data.userId, data.roomId)
     callback({
       create: event.create
     })
@@ -57,18 +58,18 @@ io.on('connection', (socket) => {
     setVideoState(data.roomId, data.time)
   })
 
-  socket.on("join_room", (data) => {
-    const user = joinRoom(data.userName, data.userId, data.room, data.videoLink)
+  socket.on("join_room", (data,callback) => {
+    const user = joinRoom(data.userName, data.userId, data.room, data.userAvatar)
 
     socket.join(user.room);
-
+    
     io.to(user.room).emit("videoState", getVideoState(user.room));
-
 
     io.to(user.room).emit("message", {
       messageId: uuidv4().split('-')[0],
       userName: user.userName,
       userId: user.userId,
+      userAvatar: data.userAvatar,
       message: `Вошёл`
     });
 
@@ -76,6 +77,10 @@ io.on('connection', (socket) => {
       room: user.room,
       users: usersRoom(user.room),
     });
+
+    callback({
+      admin: checkAdmin(data.userId,data.room)
+    })
   });
 
   socket.on('play',(data) => {
@@ -102,16 +107,25 @@ io.on('connection', (socket) => {
   socket.on("send_message", (data) => {
     if (data.event === 'leave') {
       userRoomLeave(data.room, data.userId)
-      io.to(data.room).emit("roomUsers", {
-        room: data.room,
-        users: usersRoom(data.room),
-      });
+      const isAdmin = checkAdmin(data.userId, data.room)
+
+      if (isAdmin){
+        const info = deleteRoom(data.room)
+        socket.to(data.room).emit("room_is_closed", info);
+      } else {
+        io.to(data.room).emit("roomUsers", {
+          room: data.room,
+          users: usersRoom(data.room),
+        });
+        socket.to(data.room).emit("receive_message", data);
+      }
+    } else if(data.event === 'message'){
+      socket.to(data.room).emit("receive_message", data);
     }
-    socket.to(data.room).emit("receive_message", data);
   });
 
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
+  socket.on('disconnect', (user) => {
+    console.log(user, 'user disconnected');
   });
 })
 
