@@ -1,7 +1,9 @@
 import cors from 'cors'
 import express from 'express'
 import http from 'http';
-import {Server} from 'socket.io';
+import {
+  Server
+} from 'socket.io';
 import {
   joinRoom,
   createRoom,
@@ -15,9 +17,12 @@ import {
   changeRoomVideo,
   userRoomLeave,
   checkAdmin,
-  deleteRoom
+  deleteRoom,
+  roomMaxUsers
 } from './utils/rooms.js';
-import { v4 as uuidv4 } from 'uuid';
+import {
+  v4 as uuidv4
+} from 'uuid';
 
 const app = express()
 const server = http.createServer(app)
@@ -40,8 +45,8 @@ const io = new Server({
 
 
 io.on('connection', (socket) => {
-  socket.on('create_room', (data,callback) => {
-    const event = createRoom(data.userId, data.roomId)
+  socket.on('create_room', (data, callback) => {
+    const event = createRoom(data.userId, data.roomId, data.status)
     callback({
       create: event.create
     })
@@ -49,20 +54,18 @@ io.on('connection', (socket) => {
 
   socket.on('find_room', (data, callback) => {
     const event = findRoom(data.roomId)
-    callback({
-      find: event
-    })
+    callback(event)
   })
 
-  socket.on('set_video_state',(data) => {
+  socket.on('set_video_state', (data) => {
     setVideoState(data.roomId, data.time)
   })
 
-  socket.on("join_room", (data,callback) => {
+  socket.on("join_room", (data, callback) => {
     const user = joinRoom(data.userName, data.userId, data.room, data.userAvatar)
 
     socket.join(user.room);
-    
+
     io.to(user.room).emit("videoState", getVideoState(user.room));
 
     io.to(user.room).emit("message", {
@@ -70,7 +73,7 @@ io.on('connection', (socket) => {
       userName: user.userName,
       userId: user.userId,
       userAvatar: data.userAvatar,
-      message: `Вошёл`
+      message: data.message
     });
 
     io.to(user.room).emit("roomUsers", {
@@ -79,22 +82,25 @@ io.on('connection', (socket) => {
     });
 
     callback({
-      admin: checkAdmin(data.userId,data.room)
+      admin: checkAdmin(data.userId, data.room),
+      maxUsers: roomMaxUsers(data.room)
     })
   });
 
-  socket.on('play',(data) => {
+  socket.on('play', (data) => {
     const room = playVideo(data.room)
     socket.to(data.room).emit('play', room)
-  }) 
-  socket.on('stop',(data) => {
+  })
+  
+  socket.on('stop', (data) => {
     const room = stopVideo(data.room)
     socket.to(data.room).emit('stop', room)
   })
+
   socket.on('seek', (data) => {
     const state = getVideoState(data.room)
     if (!state.isPlay) {
-      const room = seekVideo(data.room,data.time)
+      const room = seekVideo(data.room, data.time)
       socket.to(data.room).emit('seek', room)
     }
   })
@@ -109,7 +115,7 @@ io.on('connection', (socket) => {
       userRoomLeave(data.room, data.userId)
       const isAdmin = checkAdmin(data.userId, data.room)
 
-      if (isAdmin){
+      if (isAdmin) {
         const info = deleteRoom(data.room)
         socket.to(data.room).emit("room_is_closed", info);
       } else {
@@ -119,7 +125,7 @@ io.on('connection', (socket) => {
         });
         socket.to(data.room).emit("receive_message", data);
       }
-    } else if(data.event === 'message'){
+    } else if (data.event === 'message') {
       socket.to(data.room).emit("receive_message", data);
     }
   });
@@ -132,4 +138,3 @@ io.on('connection', (socket) => {
 io.listen(port, () => {
   console.log(`server ${port}`)
 });
-
