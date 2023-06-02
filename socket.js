@@ -1,28 +1,27 @@
-import cors from 'cors'
-import express from 'express'
+import cors from 'cors';
+import express from 'express';
 import http from 'http';
 import {
   Server
 } from 'socket.io';
 import {
-  joinRoom,
-  createRoom,
-  findRoom,
-  usersRoom,
-  getVideoState,
-  playVideo,
-  stopVideo,
-  seekVideo,
-  setVideoState,
-  changeRoomVideo,
-  userRoomLeave,
-  checkAdmin,
-  deleteRoom,
-  roomMaxUsers
-} from './utils/rooms.js';
-import {
   v4 as uuidv4
 } from 'uuid';
+import {
+  changeRoomVideo,
+  checkAdmin,
+  createRoom,
+  deleteRoom,
+  findRoom,
+  getVideoState,
+  joinRoom,
+  playVideo,
+  seekVideo,
+  setVideoState,
+  stopVideo,
+  userRoomLeave,
+  usersRoom
+} from './utils/rooms.js';
 
 const app = express()
 const server = http.createServer(app)
@@ -46,7 +45,7 @@ const io = new Server({
 
 io.on('connection', (socket) => {
   socket.on('create_room', (data, callback) => {
-    const event = createRoom(data.userId, data.roomId, data.status)
+    const event = createRoom(data.userId, data.roomId)
     callback({
       create: event.create
     })
@@ -83,7 +82,6 @@ io.on('connection', (socket) => {
 
     callback({
       admin: checkAdmin(data.userId, data.room),
-      maxUsers: roomMaxUsers(data.room)
     })
   });
 

@@ -1,6 +1,6 @@
 let rooms = []
 
-export const createRoom = (userId, roomId, status) => {
+export const createRoom = (userId, roomId) => {
   const isRoomReady = rooms.find(room => room.roomId === roomId)
 
   if (!isRoomReady) {
@@ -8,10 +8,10 @@ export const createRoom = (userId, roomId, status) => {
       isPlay: false,
       time: 0,
       roomId,
-      videoLink: "hMPMUDydTtQ",
+      videoLink: "",
       admin: userId,
       users: [],
-      maxUsers: status === 'basic' ? 3 : status === 'pro' ? 20 : 3
+      maxUsers: 5
     })
     return {
       create: true
@@ -54,7 +54,7 @@ export const findRoom = (roomId) => {
   const isRoomReady = rooms.find(room => room.roomId === roomId)
 
   if (isRoomReady) {
-    if ((isRoomReady.maxUsers === 3 && isRoomReady.users.length < 3) || (isRoomReady.maxUsers === 20 && isRoomReady.users.length < 20)) {
+    if (isRoomReady.maxUsers === 5 && isRoomReady.users.length < 5) {
       return {
         find: true,
         isFull: false
@@ -69,13 +69,6 @@ export const findRoom = (roomId) => {
     return {
       find: false,
     }
-  }
-}
-
-export const roomMaxUsers = (roomId) => {
-  const isRoomReady = rooms.find(room => room.roomId === roomId)
-  if (isRoomReady) {
-    return isRoomReady.maxUsers
   }
 }
 
